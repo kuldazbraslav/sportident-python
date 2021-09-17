@@ -25,20 +25,23 @@ from sireader2 import SIReaderReadout
 import argparse
 import csv
 import datetime
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 Punch = Tuple[int, datetime.datetime]
-Result = Tuple[bool, datetime.timedelta]
+ConfigRecord = Tuple[str, str, int, int, Any]
+Config = Dict[int, ConfigRecord]
 
 
 def parse_options():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--output-file', dest='output_file', required=True)
+    parser.add_argument('-c', '--config', dest='config_path', required=True)
+    parser.add_argument('-o', '--output', dest='output_path', required=True)
 
     return parser.parse_args()
 
 
-def check_fixed_order(controls: List[int], punches: List[int]) -> bool:
+def check_fixed_order(controls: List[int], punches: List[Punch]) -> bool:
+    punches = [x[0] for x in punches]
     for c in controls:
         try:
             idx = punches.index(c)
@@ -48,7 +51,7 @@ def check_fixed_order(controls: List[int], punches: List[int]) -> bool:
     return True
 
 
-def check_via(punches: List[int], start: int, finish: int, bonus: int) -> Tuple[bool, bool]:
+def check_via(punches: List[Punch], start: int, finish: int, bonus: int) -> Tuple[bool, bool]:
     return (
         check_fixed_order([start, finish], punches),
         check_fixed_order([start, bonus, finish], punches),
@@ -59,7 +62,20 @@ def check_scorelauf(controls: List[int], punches: List[int]) -> bool:
     return set(controls).intersection(set(punches)) == set(controls)
 
 
-def read_loop(output_file: str):
+def load_config(config_path: str):
+    config = dict()
+    with open(config_path, 'r') as config_file:
+        r = csv.reader(config_file)
+        for row in r:
+            if r.line_num == 1:
+                continue
+            config[int(row[0])] = row[1:3] + [int(x) for x in row[3:]]
+
+    return config
+
+
+
+def read_loop(config: Config, output_path: str):
     try:
         si = SIReaderReadout()
         print('Connected to station on port ' + si.port)
@@ -79,7 +95,6 @@ def read_loop(output_file: str):
 
             # read out card data
             card_data = si.read_sicard()
-            print(card_data)
 
             # beep
             si.ack_sicard()
@@ -88,13 +103,20 @@ def read_loop(output_file: str):
             #   control number ----^    ^
             #   punch time -------------^
             punches = card_data["punches"]
-            punch_controls = [x[0] for x in punches]
             total_time = punches[-1][1] - punches[0][1]
-            result = check_via(punch_controls, 40, 100, 49)
+            try:
+                card_config = config[card_number]
+            except KeyError:
+                print("SI card {} not found in config!".format(card_number))
+                continue
 
-            with open(output_file, 'a') as outfile:
-                outwriter = csv.writer(outfile)
-                outwriter.writerow([card_number, result[0], result[1], total_time])
+            result = globals()[card_config[1]](punches, card_config[2], card_config[3], card_config[4])
+
+            with open(output_path, 'a') as output_file:
+                outwriter = csv.writer(output_file)
+                outwriter.writerow([card_number, card_config[0], result[0], result[1], total_time])
+
+            print("SI card {} read successfully".format(card_number))
 
     except KeyboardInterrupt:
         si.disconnect()
@@ -102,4 +124,5 @@ def read_loop(output_file: str):
 
 if __name__ == '__main__':
     options = parse_options()
-    read_loop(options.output_file)
+    config = load_config(options.config_path)
+    read_loop(config, options.output_path)
