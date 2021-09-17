@@ -1636,7 +1636,7 @@ class SIReaderReadout(SIReader):
             except SIReaderCardChanged:
                 pass
                     
-        return not oldcard == self.sicard
+        return self.sicard is not None and not oldcard == self.sicard
 
     def read_sicard(self, reftime=None):
         """Reads out the SI Card currently inserted into the station. The card must be
