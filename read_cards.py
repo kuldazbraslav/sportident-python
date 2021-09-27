@@ -44,9 +44,16 @@ class PunchChecker:
         self._sireader = sireader
         self._mongo = MongoClient().routing_game
 
-    def check_max_hops(self, card_data, max_hops) -> bool:
-        # TODO: Odstranit duplicity
-        return len(card_data["punches"]) <= max_hops
+    def _normalize_punches(self, punches):
+        normalized = []
+        previous = None
+        for p in punches:
+            if p[0] == previous:
+                continue
+            normalized.append(p)
+            previous = p[0]
+
+        return normalized
 
     def _check_task(self, task, punches):
         basic = len(punches) > 0 and punches[-1][0] == task["to"]
@@ -83,7 +90,7 @@ class PunchChecker:
                     },
                 }).sort([('created', pymongo.DESCENDING)]), None)
                 if packet:
-                    results = self._check_task(packet["task"], punches)
+                    results = self._check_task(packet["task"], self._normalize_punches(sidata["punches"]))
                     # print(results)
                     packets.update_one({
                         u'_id': packet["_id"],
