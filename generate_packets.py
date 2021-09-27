@@ -30,7 +30,7 @@ import datetime
 
 def parse_options():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--temas', type=str,
+    parser.add_argument('-t', '--teams', type=str,
                         dest='teams_path', default='teams.txt')
     parser.add_argument('-r', '--round', type=int, required=True),
     parser.add_argument('-b', '--batch', type=int, required=True),
@@ -57,9 +57,8 @@ def generate_packets(round: int, batch: int, teams_path: str, sireader):
             sireader.ack_sicard()
 
 
-
-
 if __name__ == '__main__':
     options = parse_options()
     sireader = SIReaderReadoutMock() if options.mock else SIReaderReadout()
-    generate_packets(options.round, options.batch, options.teams_path, sireader)
+    generate_packets(options.round, options.batch,
+                     options.teams_path, sireader)
