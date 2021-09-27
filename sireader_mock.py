@@ -8,7 +8,12 @@ class SIReaderReadout():
 
     CARD_POLL = list(range(2095960, 2095970))
     PUNCHES = {
-        2095961: [45, 31, 40, 41, 39]
+        2095961: [45, 31, 40, 41, 39],
+        2095962: [44, 35],
+        2095963: [33, 41, 42, 43],
+        2095964: [33, 34, 35, 36, 43],
+        2095965: [41, 42, 43],
+        2095966: [41, 42, 46, 43],
     }
 
     def __init__(self):
@@ -48,8 +53,9 @@ class SIReaderReadout():
 
     def ack_sicard(self):
         #print(f"Card {self.sicard} read")
-        self._beep()
+        #self._beep()
         # sleep(0.5)
+        pass
 
     def disconnect(self):
         pass

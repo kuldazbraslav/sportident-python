@@ -49,14 +49,16 @@ class PunchChecker:
         return len(card_data["punches"]) <= max_hops
 
     def _check_task(self, task, punches):
-        basic = punches[-1][0] == task["to"]
-        bonus = {
+        basic = len(punches) > 0 and punches[-1][0] == task["to"]
+        bonus = basic and {
             'via': lambda x: x in [p[0] for p in punches[0:-1]],
+            'till': lambda x: punches[-1][1] < x,
+            'hops': lambda x: (len(punches)-1 <= x if punches[0][0] == task["from"] else len(punches) <= x),
         }[task["bonus"]["type"]](task["bonus"]["arg"])
 
         return {
             "basic": basic,
-            "bonus": basic and bonus,
+            "bonus": bonus,
         }
 
     def read_loop(self):
@@ -82,16 +84,17 @@ class PunchChecker:
                 }).sort([('created', pymongo.DESCENDING)]), None)
                 if packet:
                     results = self._check_task(packet["task"], punches)
-                    #print(results)
+                    # print(results)
                     packets.update_one({
                         u'_id': packet["_id"],
                     }, {
-                        '$push': {
+                        '$set': {
                             'punches': punches,
                             'results': results,
                         },
                     })
-                    print(f"SI card {sicard} read and updated in the database.")
+                    print(
+                        f"SI card {sicard} read and updated in the database.")
                 else:
                     print(f"SI card {sicard} NOT FOUND in the database!")
 
