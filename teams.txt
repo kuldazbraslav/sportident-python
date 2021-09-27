@@ -1,0 +1,10 @@
+white
+yellow
+dark green
+light green
+dark blue
+light blue
+red
+orange
+dark purple
+light purple

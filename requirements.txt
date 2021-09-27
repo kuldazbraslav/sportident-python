@@ -1,1 +1,4 @@
 pyserial==3.4
+six
+pymongo==3.5.1
+beepy==1.0.7
