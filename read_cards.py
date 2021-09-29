@@ -21,28 +21,18 @@ To select a specific serial port, provide it's name as the first command line
 parameter to the program.
 """
 
-from pymongo import MongoClient
 import pymongo
 from sireader_mock import SIReaderReadout as SIReaderReadoutMock
 from sireader2 import SIReaderReadout
+from time import sleep
 import argparse
-import csv
 import datetime
 from typing import Any, Dict, List, Tuple
-
-Punch = Tuple[int, datetime.datetime]
-ConfigRecord = Tuple[str, str, int, int, Any]
-Config = Dict[int, ConfigRecord]
-
-
-class CardNotFound(Exception):
-    pass
-
 
 class PunchChecker:
     def __init__(self, sireader):
         self._sireader = sireader
-        self._mongo = MongoClient().routing_game
+        self._mongo = pymongo.MongoClient().routing_game
 
     def _normalize_punches(self, punches):
         normalized = []
@@ -75,7 +65,7 @@ class PunchChecker:
             while True:
                 # wait for a card to be inserted into the reader
                 while not self._sireader.poll_sicard():
-                    pass
+                    sleep(0.5)
 
                 # read out card data
                 sicard = self._sireader.sicard

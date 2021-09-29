@@ -24,6 +24,7 @@ parameter to the program.
 from pymongo import MongoClient
 from sireader_mock import SIReaderReadout as SIReaderReadoutMock
 from sireader2 import SIReaderReadout
+from time import sleep
 import argparse
 import datetime
 
@@ -45,7 +46,8 @@ def generate_packets(round: int, batch: int, teams_path: str, sireader):
     with open(teams_path, 'r') as teams_file:
         for team in teams_file.read().splitlines():
             print(f"Insert SI card for {team.upper()} team")
-            sireader.poll_sicard()
+            while not sireader.poll_sicard():
+                sleep(0.5)
             sicard = sireader.sicard
             packet = {
                 "created": datetime.datetime.now().isoformat(),
